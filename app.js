@@ -22,16 +22,6 @@ mongoose.connection.on('error', function(err){
   console.log('Database connection error ' + err);
 });
 
-cron.schedule("59 * * * *", function(){
-  getAllJsonResults(function(results){
-    getAllJsonBets(function(jsonOdds){
-      for(var i = 0; i < jsonOdds.length; i++){
-        getJsonResult(jsonOdds[i], results);
-      }
-    });
-  });
-});
-
 //Get all JSON BetS
 var getAllJsonBets = function(callback){
   const betStatus = 'open';
@@ -52,6 +42,7 @@ var getAllJsonBets = function(callback){
 }
 
 var getAllJsonResults = function(callback){
+  console.log('Here');
   var headers = {
     'x-api-key':'d3e32b4c-80f4-4522-8054-2992b1177805'
   }
@@ -135,6 +126,7 @@ var updateBalance = function(userId, amount){
   User.getUserById(userId, function(err, user){
     if(!err){
       const newBal = user.currentBalance + amount;
+      console.log(newBal);
       User.updateBalance(userId, newBal, function(err, res){
         if(err){
           console.log(err);
@@ -155,13 +147,11 @@ var getJsonResult = function(action, results){
   for(var i = 0; i < action.subBets.length; i++){
     subBets.push(action.subBets[i]);
   }
-  console.log('=====One Action=====');
   for(var i = 0; i < subBets.length; i++){
     curBet = subBets[i];
     const id = curBet.id;
     const betType = curBet.betType;
     const line = curBet.line;
-    console.log('Bet Type: ' + betType);
     for(var j = 0; j < results.length; j++){
       if(results[j].ID == id){
         var homeScore = results[j].HomeScore;
@@ -229,7 +219,7 @@ var getJsonResult = function(action, results){
         }
       }
     }
-
+    updateBalance(action.userId, 50);
     if(allBetsSatisfied(action)){
       const res = calcBetResult(action);
       if(res=='win' || res=='loss'){
@@ -239,3 +229,13 @@ var getJsonResult = function(action, results){
     }
   }
 }
+
+cron.schedule("59 * * * *", function(){
+  getAllJsonResults(function(results){
+    getAllJsonBets(function(jsonOdds){
+      for(var i = 0; i < jsonOdds.length; i++){
+        getJsonResult(jsonOdds[i], results);
+      }
+    });
+  });
+});
