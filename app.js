@@ -22,7 +22,7 @@ mongoose.connection.on('error', function(err){
   console.log('Database connection error ' + err);
 });
 
-cron.schedule("15 * * * *", function(){
+cron.schedule("59 * * * *", function(){
   getAllJsonResults(function(results){
     getAllJsonBets(function(jsonOdds){
       for(var i = 0; i < jsonOdds.length; i++){
