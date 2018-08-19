@@ -42,7 +42,6 @@ var getAllJsonBets = function(callback){
 }
 
 var getAllJsonResults = function(callback){
-  console.log('Here');
   var headers = {
     'x-api-key':'d3e32b4c-80f4-4522-8054-2992b1177805'
   }
@@ -87,6 +86,10 @@ var checkLoss = function(res){
   return res=='loss';
 }
 
+var checkDraw = function(res){
+  return res=='draw';
+}
+
 var calcBetResult = function(action){
   var tmpRes;
   var tmpResArr = [];
@@ -95,10 +98,15 @@ var calcBetResult = function(action){
     tmpResArr.push(status);
   }
 
+  //check if theres a loss
+  for(var i = 0; i < tmpResArr.length; i++){
+    if(tmpResArr[i]=='loss'){
+      return 'loss';
+    }
+  }
+
   if(tmpResArr.every(checkWin)){
     return 'win';
-  } else if(tmpResArr.every(checkLoss)){
-    return 'loss';
   } else if(tmpResArr.every(checkDraw)){
     return 'draw';
   }
@@ -112,21 +120,26 @@ var closeBet = function(action, res){
   } else {
     tmpAmount = parseFloat(action.betAmount) * -1;
   }
+
   Bet.closeBet(action._id, res, function(err, bet){
     if(err){
       console.log(err);
     } else {
+      if(action._id=='5b7878b06266320014ca8599'){
+        console.log('=====Closing Bet=====');
+        console.log(action.userName);
+        console.log(tmpAmount);
+      }
       updateBalance(action.userId, tmpAmount);
     }
   });
 }
 
 var updateBalance = function(userId, amount){
-
   User.getUserById(userId, function(err, user){
     if(!err){
       const newBal = user.currentBalance + amount;
-      console.log(newBal);
+
       User.updateBalance(userId, newBal, function(err, res){
         if(err){
           console.log(err);
@@ -138,7 +151,6 @@ var updateBalance = function(userId, amount){
       console.log(err);
     }
   });
-
 }
 
 var getJsonResult = function(action, results){
@@ -219,7 +231,7 @@ var getJsonResult = function(action, results){
         }
       }
     }
-    updateBalance(action.userId, 50);
+
     if(allBetsSatisfied(action)){
       const res = calcBetResult(action);
       if(res=='win' || res=='loss'){
@@ -230,12 +242,22 @@ var getJsonResult = function(action, results){
   }
 }
 
-cron.schedule("59 * * * *", function(){
-  getAllJsonResults(function(results){
-    getAllJsonBets(function(jsonOdds){
-      for(var i = 0; i < jsonOdds.length; i++){
-        getJsonResult(jsonOdds[i], results);
-      }
-    });
+getAllJsonResults(function(results){
+  getAllJsonBets(function(jsonOdds){
+    for(var i = 0; i < jsonOdds.length; i++){
+      getJsonResult(jsonOdds[i], results);
+    }
   });
 });
+
+updateBalance('5b47cf6c65acce0014a2c91f', -61);
+
+// cron.schedule("59 * * * *", function(){
+//   getAllJsonResults(function(results){
+//     getAllJsonBets(function(jsonOdds){
+//       for(var i = 0; i < jsonOdds.length; i++){
+//         getJsonResult(jsonOdds[i], results);
+//       }
+//     });
+//   });
+// });
