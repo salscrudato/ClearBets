@@ -251,6 +251,4 @@ getAllJsonResults(function(results){
   });
 });
 
-updateBalance('5b47cf6c65acce0014a2c91f', -61);
-
 process.exit();
