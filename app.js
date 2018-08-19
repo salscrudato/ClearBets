@@ -250,8 +250,6 @@ getAllJsonResults(function(results){
   });
 });
 
-updateBalance('5b47cf6c65acce0014a2c91f', -61);
-
 // cron.schedule("59 * * * *", function(){
 //   getAllJsonResults(function(results){
 //     getAllJsonBets(function(jsonOdds){
