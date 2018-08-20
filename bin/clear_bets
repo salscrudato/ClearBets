@@ -139,8 +139,9 @@ var closeBet = function(action, res){
 var updateBalance = function(userId, amount){
   User.getUserById(userId, function(err, user){
     if(!err){
+      console.log('=====Current Balance=====');
+      console.log(user.currentBalance);
       const newBal = user.currentBalance + amount;
-
       User.updateBalance(userId, newBal, function(err, res){
         if(err){
           console.log(err);
@@ -169,6 +170,8 @@ var getJsonResult = function(action, results){
       if(results[j].ID == id){
         var homeScore = results[j].HomeScore;
         var awayScore = results[j].AwayScore;
+        console.log('=====Home and Away Scores=====');
+        console.log(action.homeTeam + ': ' + homeScore + '  ' + action.awayTeam + ': ' + awayScore);
         if(results[j].FinalType == 'Finished' && homeScore != null && awayScore!= null){
 
           if(betType=='homeTeamML'){

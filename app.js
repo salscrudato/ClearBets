@@ -6,9 +6,9 @@ const Bet = require('./models/bet');
 const User = require('./models/user');
 const request = require('request');
 
-var results = [];
-
 app = express();
+
+var userBalanceArray = [];
 
 mongoose.connect(config.database);
 
@@ -21,6 +21,20 @@ mongoose.connection.on('connected', function(){
 mongoose.connection.on('error', function(err){
   console.log('Database connection error ' + err);
 });
+
+
+var getAllUserBalances = function(callback){
+  User.find(function(err,user){
+    if(!err){
+      user.forEach(function(oneUser){
+        userBalanceArray.push({userId: oneUser._id, currentBalance: oneUser.currentBalance});
+      });
+      callback();
+    }else{
+      callback();
+    }
+  });
+}
 
 //Get all JSON BetS
 var getAllJsonBets = function(callback){
@@ -55,8 +69,8 @@ var getAllJsonResults = function(callback){
     if (!error && response.statusCode == 200) {
       var data = JSON.parse(body);
       for(var i = 0; i < data.length; i++){
-        // if(data[i].FinalType == 'Finished' && data[i].OddType == 'Game'){
-        if(data[i].OddType == 'Game'){
+        if(data[i].FinalType == 'Finished' && data[i].OddType == 'Game'){
+          //if(data[i].OddType == 'Game'){
           finalResults.push(data[i]);
         }
       }
@@ -125,26 +139,27 @@ var closeBet = function(action, res){
     if(err){
       console.log(err);
     } else {
-      if(action._id=='5b7878b06266320014ca8599'){
-        console.log('=====Closing Bet=====');
-        console.log(action.userName);
-        console.log(tmpAmount);
-      }
       updateBalance(action.userId, tmpAmount);
     }
   });
 }
 
 var updateBalance = function(userId, amount){
+  var updateAmount = 0;
   User.getUserById(userId, function(err, user){
     if(!err){
-      const newBal = user.currentBalance + amount;
-
+      for(var i = 0; i < userBalanceArray.length; i++){
+        if(userBalanceArray[i].userId==userId){
+          updateAmount = userBalanceArray[i].currentBalance;
+          userBalanceArray[i].currentBalance = userBalanceArray[i].currentBalance + amount;
+        }
+      }
+      const newBal = amount + updateAmount;
       User.updateBalance(userId, newBal, function(err, res){
         if(err){
           console.log(err);
         } else {
-          console.log(res);
+          return true;
         }
       });
     } else {
@@ -153,7 +168,7 @@ var updateBalance = function(userId, amount){
   });
 }
 
-var getJsonResult = function(action, results){
+var getJsonResult = function(action, results, callback){
   var result = 'noResult';
   var subBets = [];
   for(var i = 0; i < action.subBets.length; i++){
@@ -166,10 +181,9 @@ var getJsonResult = function(action, results){
     const line = curBet.line;
     for(var j = 0; j < results.length; j++){
       if(results[j].ID == id){
-        var homeScore = results[j].HomeScore;
-        var awayScore = results[j].AwayScore;
+        var homeScore = parseInt(results[j].HomeScore);
+        var awayScore = parseInt(results[j].AwayScore);
         if(results[j].FinalType == 'Finished' && homeScore != null && awayScore!= null){
-
           if(betType=='homeTeamML'){
             if(homeScore > awayScore){
               subBets[i].calcResult = 'win';
@@ -227,35 +241,24 @@ var getJsonResult = function(action, results){
               subBets[i].calcResult = 'draw';
             }
           }
-          //console.log('home: ' + curBet.homeTeam + ':' + homeScore + ' away: ' + curBet.awayTeam + ':' + awayScore);
         }
       }
     }
-
-    if(allBetsSatisfied(action)){
-      const res = calcBetResult(action);
-      if(res=='win' || res=='loss'){
-        //===Temp===
-        closeBet(action, res);
-      }
+  }
+  if(allBetsSatisfied(action)){
+    const res = calcBetResult(action);
+    if(res=='win' || res=='loss'){
+      closeBet(action, res);
     }
   }
 }
 
-getAllJsonResults(function(results){
-  getAllJsonBets(function(jsonOdds){
-    for(var i = 0; i < jsonOdds.length; i++){
-      getJsonResult(jsonOdds[i], results);
-    }
+getAllUserBalances(function(){
+  getAllJsonResults(function(results){
+    getAllJsonBets(function(jsonOdds){
+      for(var i = 0; i < jsonOdds.length; i++){
+        getJsonResult(jsonOdds[i], results);
+      }
+    });
   });
 });
-
-// cron.schedule("59 * * * *", function(){
-//   getAllJsonResults(function(results){
-//     getAllJsonBets(function(jsonOdds){
-//       for(var i = 0; i < jsonOdds.length; i++){
-//         getJsonResult(jsonOdds[i], results);
-//       }
-//     });
-//   });
-// });
