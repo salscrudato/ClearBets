@@ -10,6 +10,8 @@ var userBalanceArray = [];
 
 mongoose.connect(config.database);
 
+const port = process.env.PORT || 8080;
+
 //Gets all users and balances and adds them to the userBalanceArray
 var getAllUserBalances = function(callback){
   User.find(function(err, user){
@@ -70,7 +72,7 @@ var getAllJsonResults = function(callback){
 
 var getBet365Result = function(betId, callback){
   var tmpId = betId;
-  baseUrl = 'https://api.betsapi.com/v1/bet365/result?token=10744-6nAVE6st6PH0mD&event_id=';
+  baseUrl = 'https://api.betsapi.com/v1/bet365/result?token=11194-fFJWf4UUW1tZhK&event_id=';
   tempUrl = baseUrl + betId;
   var options = {
     url: tempUrl,
@@ -86,10 +88,12 @@ var getBet365Result = function(betId, callback){
       var homeScoreFirstHalf = null;
       var awayScoreFirstHalf = null;
       var firstInningScore = null;
+      var homeTeam = null;
 
       data = JSON.parse(body);
       for(var i = 0; i < data.results.length; i++){
-        var finalType = data.results[i].time_status;
+        finalType = data.results[i].time_status;
+        homeTeam = data.results[i].away.name;
         if(finalType == 3){
           finalType = 'Finished';
           var homeScore = data.results[i].ss.split('-')[1];
@@ -119,7 +123,8 @@ var getBet365Result = function(betId, callback){
           HomeScoreFirstHalf: homeScoreFirstHalf,
           AwayScoreFirstHalf: awayScoreFirstHalf,
           firstInningScore: firstInningScore,
-          FinalType: finalType
+          FinalType: finalType,
+          HomeTeam: homeTeam
         });
       }
     } else {
@@ -149,7 +154,9 @@ var createBet365String = function(bets){
   var betIdArr = [];
   for (var i = 0; i < bets.length; i++){
     for(var j = 0; j < bets[i].subBets.length; j++){
-      betIdArr.push(bets[i].subBets[j].id);
+      if(betIdArr.indexOf(bets[i].subBets[j].id) < 0){
+        betIdArr.push(bets[i].subBets[j].id);
+      }
     }
   }
   return betIdArr;
@@ -216,6 +223,16 @@ var closeBet = function(action, res){
   });
 }
 
+var closeBetDraw = function(action, res){
+  Bet.closeBet(action._id, res, function(err, bet){
+    if(err){
+      console.log(err);
+    } else {
+      console.log({success: true});
+    }
+  });
+}
+
 
 var updateBalance = function(userId, amount){
   var updateAmount = 0;
@@ -253,15 +270,19 @@ var getBetResults = function(action, results, callback){
     const id = curBet.id;
     const betType = curBet.betType;
     const line = curBet.line;
-    console.log('=====Open Bet=====');
-    console.log(action.description);
     for(var j = 0; j < results.length; j++){
       if(results[j].ID == id){
+        console.log('====================Open Bet: ' + action.description + '====================');
+
+        var bet365HomeTeam = results[j].HomeTeam;
+        var firstInningScore = parseInt(results[j].firstInningScore);
         var homeScore = parseInt(results[j].HomeScore);
         var awayScore = parseInt(results[j].AwayScore);
         var homeScoreFirstHalf = parseInt(results[j].HomeScoreFirstHalf);
         var awayScoreFirstHalf = parseInt(results[j].AwayScoreFirstHalf);
+
         if(results[j].FinalType == 'Finished' && homeScore != null && awayScore!= null){
+
           if(betType=='homeTeamML'){
             console.log('=====Home Team ML=====');
             console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
@@ -269,19 +290,6 @@ var getBetResults = function(action, results, callback){
               subBets[i].calcResult = 'win';
             } else if(homeScore < awayScore){
               subBets[i].calcResult = 'loss';
-            } else if(homeScore == awayScore){
-              subBets[i].calcResult = 'draw';
-            }
-          }
-          if(betType=='homeTeamFirstHalfFB'){
-            console.log('=====Home Team 1H=====');
-            console.log(action.subBets[i].homeTeam + ': ' + homeScoreFirstHalf + ' ' + action.subBets[i].awayTeam + ': ' + awayScoreFirstHalf);
-            if(homeScoreFirstHalf > awayScoreFirstHalf){
-              subBets[i].calcResult = 'win';
-            } else if(homeScoreFirstHalf < awayScoreFirstHalf){
-              subBets[i].calcResult = 'loss';
-            } else if(homeScoreFirstHalf == awayScoreFirstHalf){
-              subBets[i].calcResult = 'draw';
             }
           }
           if(betType=='awayTeamML'){
@@ -291,25 +299,13 @@ var getBetResults = function(action, results, callback){
               subBets[i].calcResult = 'win';
             } else if(awayScore < homeScore){
               subBets[i].calcResult = 'loss';
-            } else if(homeScore == awayScore){
-              subBets[i].calcResult = 'draw';
-            }
-          }
-          if(betType=='awayTeamFirstHalfFB'){
-            console.log('=====Away Team 1H=====');
-            console.log(action.subBets[i].homeTeam + ': ' + homeScoreFirstHalf + ' ' + action.subBets[i].awayTeam + ': ' + awayScoreFirstHalf);
-            if(awayScoreFirstHalf > homeScoreFirstHalf){
-              subBets[i].calcResult = 'win';
-            } else if(homeScoreFirstHalf > awayScoreFirstHalf){
-              subBets[i].calcResult = 'loss';
-            } else if(homeScoreFirstHalf == awayScoreFirstHalf){
-              subBets[i].calcResult = 'draw';
             }
           }
           if(betType=='homeTeamRL'){
             console.log('=====Home Team RL=====');
             console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
-            homeScore = homeScore + parseFloat(curBet.line);
+            homeScore = homeScore + parseFloat(line);
+            console.log('New score: ' + homeScore);
             if(homeScore > awayScore){
               subBets[i].calcResult = 'win';
             } else if(homeScore < awayScore){
@@ -321,6 +317,8 @@ var getBetResults = function(action, results, callback){
           if(betType=='awayTeamRL'){
             console.log('=====Away Team RL=====');
             console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
+            awayScore = awayScore + parseFloat(line);
+            console.log('New score: ' + awayScore);
             if(awayScore > homeScore){
               subBets[i].calcResult = 'win';
             } else if(awayScore < homeScore){
@@ -332,7 +330,12 @@ var getBetResults = function(action, results, callback){
           if(betType=='over'){
             console.log('=====OVER '+ subBets[i].totalNumber +'=====');
             console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
-            const totalNumber = subBets[i].totalNumber;
+            var totalNumber = null;
+            totalNumber = parseFloat(subBets[i].totalNumber);
+            if(totalNumber == undefined || totalNumber == null || (totalNumber>0) == false){
+              totalNumber = parseFloat(subBets[i].over.number);
+            }
+            console.log('Total Number: ' + totalNumber);
             if(homeScore + awayScore > totalNumber){
               subBets[i].calcResult = 'win';
             } else if(homeScore + awayScore < totalNumber){
@@ -344,7 +347,12 @@ var getBetResults = function(action, results, callback){
           if(betType=='under'){
             console.log('=====Under '+ subBets[i].totalNumber +'=====');
             console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
-            const totalNumber = subBets[i].totalNumber;
+            var totalNumber = null;
+            totalNumber = parseFloat(subBets[i].totalNumber);
+            if(totalNumber == undefined || totalNumber == null || (totalNumber>0) == false){
+              totalNumber = parseFloat(subBets[i].under.number);
+            }
+            console.log('Total Number: ' + totalNumber);
             if(homeScore + awayScore < totalNumber){
               subBets[i].calcResult = 'win';
             } else if(homeScore + awayScore > totalNumber){
@@ -353,10 +361,86 @@ var getBetResults = function(action, results, callback){
               subBets[i].calcResult = 'draw';
             }
           }
+          if(betType=='homeTeamFirstHalf' || betType=='homeTeamFirstHalfFB'){
+            console.log('=====Home Team 1H=====');
+            console.log(action.subBets[i].homeTeam + ': ' + homeScoreFirstHalf + ' ' + action.subBets[i].awayTeam + ': ' + awayScoreFirstHalf);
+            if(homeScoreFirstHalf > awayScoreFirstHalf){
+              subBets[i].calcResult = 'win';
+            } else if(awayScoreFirstHalf > homeScoreFirstHalf){
+              subBets[i].calcResult = 'loss';
+            } else if(awayScoreFirstHalf == homeScoreFirstHalf){
+              subBets[i].calcResult = 'draw';
+            }
+          }
+          if(betType=='awayTeamFirstHalf' || betType=='awayTeamFirstHalfFB'){
+            console.log('=====Away Team 1H=====');
+            console.log(action.subBets[i].homeTeam + ': ' + homeScoreFirstHalf + ' ' + action.subBets[i].awayTeam + ': ' + awayScoreFirstHalf);
+            if(awayScoreFirstHalf > homeScoreFirstHalf){
+              subBets[i].calcResult = 'win';
+            } else if(homeScoreFirstHalf > awayScoreFirstHalf){
+              subBets[i].calcResult = 'loss';
+            } else if(homeScoreFirstHalf == awayScoreFirstHalf){
+              subBets[i].calcResult = 'draw';
+            }
+          }
+          if(betType=='homeTeamFirstHalfSpread'){
+            console.log('=====Home Team 1H Spread=====');
+            console.log(action.subBets[i].homeTeam + ': ' + homeScoreFirstHalf + ' ' + action.subBets[i].awayTeam + ': ' + awayScoreFirstHalf);
+            homeScoreFirstHalf = homeScoreFirstHalf + parseFloat(action.subBets[i].homeTeamRLFirstHalf);
+            if(homeScoreFirstHalf > awayScoreFirstHalf){
+              subBets[i].calcResult = 'win';
+            } else if(awayScoreFirstHalf > homeScoreFirstHalf){
+              subBets[i].calcResult = 'loss';
+            } else if(awayScoreFirstHalf == homeScoreFirstHalf){
+              subBets[i].calcResult = 'draw';
+            }
+          }
+          if(betType=='awayTeamFirstHalfSpread'){
+            console.log('=====Away Team 1H Spread=====');
+            console.log(action.subBets[i].homeTeam + ': ' + homeScoreFirstHalf + ' ' + action.subBets[i].awayTeam + ': ' + awayScoreFirstHalf);
+            awayScoreFirstHalf = awayScoreFirstHalf + parseFloat(action.subBets[i].awayTeamRLFirstHalf);
+            if(awayScoreFirstHalf > homeScoreFirstHalf){
+              subBets[i].calcResult = 'win';
+            } else if(homeScoreFirstHalf > awayScoreFirstHalf){
+              subBets[i].calcResult = 'loss';
+            } else if(homeScoreFirstHalf == awayScoreFirstHalf){
+              subBets[i].calcResult = 'draw';
+            }
+          }
+          if(betType=='noRunInFirst'){
+            console.log('=====No Run in First=====Home Team' + action.subBets[i].homeTeam);
+            console.log('First Inning Score: ' + firstInningScore);
+            if(firstInningScore == 0){
+              subBets[i].calcResult = 'win';
+            } else {
+              subBets[i].calcResult = 'loss';
+            }
+          }
+          if(betType=='runInFirst'){
+            console.log('=====Run in First=====Home Team' + action.subBets[i].homeTeam);
+            console.log('First Inning Score: ' + firstInningScore);
+            if(firstInningScore > 0){
+              subBets[i].calcResult = 'win';
+            } else {
+              subBets[i].calcResult = 'loss';
+            }
+          }
+          if(betType=='homeTeamUnder'){
+            console.log('=====Home Team Under '+ subBets[i].homeTeamTotalLine +'=====');
+            console.log(action.subBets[i].homeTeam + ': ' + homeScore);
+            const homeTotalNumber = parseFloat(subBets[i].homeTeamTotalLine);
+            if(homeScore < homeTotalNumber){
+              subBets[i].calcResult = 'win';
+            } else if(homeScore > homeTotalNumber){
+              subBets[i].calcResult = 'loss';
+            } else if(homeScore == homeTotalNumber){
+              subBets[i].calcResult = 'draw';
+            }
+          }
           if(betType=='firstHalfOverFB'){
             console.log('=====1H Over FB '+ subBets[i].firstHalfOver +'=====');
             console.log(action.subBets[i].homeTeam + ': ' + homeScoreFirstHalf + ' ' + action.subBets[i].awayTeam + ': ' + awayScoreFirstHalf);
-            const totalNumber = subBets[i].firstHalfOver;
+            const totalNumber = parseFloat(subBets[i].firstHalfOver);
             if(homeScoreFirstHalf + awayScoreFirstHalf > totalNumber){
               subBets[i].calcResult = 'win';
             } else if(homeScoreFirstHalf + awayScoreFirstHalf < totalNumber){
@@ -368,7 +452,7 @@ var getBetResults = function(action, results, callback){
           if(betType=='firstHalfUnderFB'){
             console.log('=====1H Over FB '+ subBets[i].firstHalfUnder +'=====');
             console.log(action.subBets[i].homeTeam + ': ' + homeScoreFirstHalf + ' ' + action.subBets[i].awayTeam + ': ' + awayScoreFirstHalf);
-            const totalNumber = subBets[i].firstHalfUnder;
+            const totalNumber = parseFloat(subBets[i].firstHalfUnder);
             if(homeScoreFirstHalf + awayScoreFirstHalf < totalNumber){
               subBets[i].calcResult = 'win';
             } else if(homeScoreFirstHalf + awayScoreFirstHalf > totalNumber){
@@ -425,15 +509,26 @@ var getBetResults = function(action, results, callback){
               subBets[i].calcResult = 'draw';
             }
           }
+          if(betType=='draw'){
+            if(homeScore == awayScore){
+              subBets[i].calcResult = 'win';
+            } else {
+              subBets[i].calcResult = 'loss';
+            }
+          }
+
         }
       }
     }
   }
+
   if(allBetsSatisfied(action)){
     const res = calcBetResult(action);
     console.log('Result: ' + res)
     if(res=='win' || res=='loss'){
       closeBet(action, res);
+    } else if(res=='draw'){
+      closeBetDraw(action, res);
     }
   }
 }
@@ -445,8 +540,9 @@ getAllUserBalances(function(success){
       if(results != false){
         getAllOpenBets('jsonOdds', function(jsonOdds){
           for(var i = 0; i < jsonOdds.length; i++){
-            getBetResults(jsonOdds[i], results);
+            getBetResults(jsonOdds[i], results, 'json');
           }
+          console.log('==========Bet365==========');
           bet365();
         });
       }
@@ -463,3 +559,7 @@ var bet365 = function(){
     });
   });
 }
+
+app.listen(port, function(){
+	console.log('Server started on port '+ port);
+});
