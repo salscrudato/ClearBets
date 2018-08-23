@@ -153,10 +153,13 @@ var getAllBet365Results = function(bets, callback){
 }
 
 var createBet365String = function(bets){
+  var curTime = (new Date).getTime();
   var betIdArr = [];
   for (var i = 0; i < bets.length; i++){
     for(var j = 0; j < bets[i].subBets.length; j++){
       if(betIdArr.indexOf(bets[i].subBets[j].id) < 0){
+        console.log('Current Time: ' + curTime);
+        console.log('Bet Time: ' + bets[i].subBets[j].epoch);
         betIdArr.push(bets[i].subBets[j].id);
       }
     }
@@ -546,7 +549,6 @@ var getBetResults = function(action, results, callback){
   }
 
   app.listen(port, function(){
-	console.log('Server started on port '+ port);
   getAllUserBalances(function(success){
     if(success==true){
       getAllJsonResults(function(results){
