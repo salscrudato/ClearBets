@@ -12,6 +12,8 @@ mongoose.connect(config.database);
 
 const port = process.env.PORT || 8080;
 
+var app = express();
+
 //Gets all users and balances and adds them to the userBalanceArray
 var getAllUserBalances = function(callback){
   User.find(function(err, user){
