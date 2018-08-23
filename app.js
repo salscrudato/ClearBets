@@ -50,7 +50,7 @@ var getAllOpenBets = function(source, callback){
 var getAllJsonResults = function(callback){
   var finalResults = [];
   var headers = {
-    'x-api-key':'d3e32b4c-80f4-4522-8054-2992b1177805'
+    'x-api-key':'c3eeb8e5-339c-4c38-9cf5-9aa6255969e5'
   }
   var options = {
     url: 'https://jsonodds.com/api/results',
@@ -535,33 +535,31 @@ var getBetResults = function(action, results, callback){
   }
 }
 
-//Close all JSON Bets
-getAllUserBalances(function(success){
-  if(success==true){
-    getAllJsonResults(function(results){
-      if(results != false){
-        getAllOpenBets('jsonOdds', function(jsonOdds){
-          for(var i = 0; i < jsonOdds.length; i++){
-            getBetResults(jsonOdds[i], results, 'json');
-          }
-          console.log('==========Bet365==========');
-          bet365();
-        });
-      }
+  var bet365 = function(){
+    getAllOpenBets('bet365', function(bet365Odds){
+      getAllBet365Results(createBet365String(bet365Odds), function(results){
+        for(var i = 0; i < bet365Odds.length; i++){
+          getBetResults(bet365Odds[i], results);
+        }
+      });
     });
   }
-});
 
-var bet365 = function(){
-  getAllOpenBets('bet365', function(bet365Odds){
-    getAllBet365Results(createBet365String(bet365Odds), function(results){
-      for(var i = 0; i < bet365Odds.length; i++){
-        getBetResults(bet365Odds[i], results);
-      }
-    });
-  });
-}
-
-app.listen(port, function(){
+  app.listen(port, function(){
 	console.log('Server started on port '+ port);
+  getAllUserBalances(function(success){
+    if(success==true){
+      getAllJsonResults(function(results){
+        if(results != false){
+          getAllOpenBets('jsonOdds', function(jsonOdds){
+            for(var i = 0; i < jsonOdds.length; i++){
+              getBetResults(jsonOdds[i], results, 'json');
+            }
+            console.log('==========Bet365==========');
+            bet365();
+          });
+        }
+      });
+    }
+  });
 });
