@@ -10,7 +10,7 @@ var userBalanceArray = [];
 
 mongoose.connect(config.database);
 
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 8088;
 
 var app = express();
 
@@ -98,8 +98,9 @@ var getBet365Result = function(betId, callback){
         homeTeam = data.results[i].away.name;
         if(finalType == 3){
           finalType = 'Finished';
-          var homeScore = data.results[i].ss.split('-')[1];
-          var awayScore = data.results[i].ss.split('-')[0];
+            var homeScore = data.results[i].ss.split('-')[1];
+            var awayScore = data.results[i].ss.split('-')[0];
+          
           if(data.results[i].sport_id == 12){
             homeScoreFirstHalf = parseInt(data.results[i].scores["3"]["away"]);
             awayScoreFirstHalf = parseInt(data.results[i].scores["3"]["home"]);
@@ -285,23 +286,43 @@ var getBetResults = function(action, results, callback){
         var awayScoreFirstHalf = parseInt(results[j].AwayScoreFirstHalf);
 
         if(results[j].FinalType == 'Finished' && homeScore != null && awayScore!= null){
-
-          if(betType=='homeTeamML'){
-            console.log('=====Home Team ML=====');
-            console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
-            if(homeScore > awayScore){
-              subBets[i].calcResult = 'win';
-            } else if(homeScore < awayScore){
-              subBets[i].calcResult = 'loss';
+          if(curBet.sport != 1){
+            if(betType=='homeTeamML'){
+              console.log('=====Home Team ML=====');
+              console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
+              if(homeScore > awayScore){
+                subBets[i].calcResult = 'win';
+              } else if(homeScore < awayScore){
+                subBets[i].calcResult = 'loss';
+              }
             }
-          }
-          if(betType=='awayTeamML'){
-            console.log('=====awayTeamML=====');
-            console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
-            if(awayScore > homeScore){
-              subBets[i].calcResult = 'win';
-            } else if(awayScore < homeScore){
-              subBets[i].calcResult = 'loss';
+            if(betType=='awayTeamML'){
+              console.log('=====awayTeamML=====');
+              console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
+              if(awayScore > homeScore){
+                subBets[i].calcResult = 'win';
+              } else if(awayScore < homeScore){
+                subBets[i].calcResult = 'loss';
+              }
+            }
+          }else {
+            if(betType=='homeTeamML'){
+              console.log('=====Home Team ML Soccer=====');
+              console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
+              if(homeScore > awayScore){
+                subBets[i].calcResult = 'win';
+              } else if(homeScore <= awayScore){
+                subBets[i].calcResult = 'loss';
+              }
+            }
+            if(betType=='awayTeamML'){
+              console.log('=====awayTeamML Soccer=====');
+              console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
+              if(awayScore > homeScore){
+                subBets[i].calcResult = 'win';
+              } else if(awayScore <= homeScore){
+                subBets[i].calcResult = 'loss';
+              }
             }
           }
           if(betType=='homeTeamRL'){
@@ -536,17 +557,17 @@ var getBetResults = function(action, results, callback){
   }
 }
 
-  var bet365 = function(){
-    getAllOpenBets('bet365', function(bet365Odds){
-      getAllBet365Results(createBet365String(bet365Odds), function(results){
-        for(var i = 0; i < bet365Odds.length; i++){
-          getBetResults(bet365Odds[i], results);
-        }
-      });
+var bet365 = function(){
+  getAllOpenBets('bet365', function(bet365Odds){
+    getAllBet365Results(createBet365String(bet365Odds), function(results){
+      for(var i = 0; i < bet365Odds.length; i++){
+        getBetResults(bet365Odds[i], results);
+      }
     });
-  }
+  });
+}
 
-  app.listen(port, function(){
+app.listen(port, function(){
   getAllUserBalances(function(success){
     if(success==true){
       getAllJsonResults(function(results){
