@@ -91,31 +91,56 @@ var getBet365Result = function(betId, callback){
       var awayScoreFirstHalf = null;
       var firstInningScore = null;
       var homeTeam = null;
-
+      var totalTennisNumber = null;
       data = JSON.parse(body);
+
       for(var i = 0; i < data.results.length; i++){
         finalType = data.results[i].time_status;
-        homeTeam = data.results[i].away.name;
         if(finalType == 3){
           finalType = 'Finished';
+
+          //Football, Baseball, Soccer
+          if(data.results[i].sport_id == 12 || data.results[i].sport_id == 16 || data.results[i].sport_id == 1){
             var homeScore = data.results[i].ss.split('-')[1];
             var awayScore = data.results[i].ss.split('-')[0];
-          
-          if(data.results[i].sport_id == 12){
-            homeScoreFirstHalf = parseInt(data.results[i].scores["3"]["away"]);
-            awayScoreFirstHalf = parseInt(data.results[i].scores["3"]["home"]);
-          } else if (data.results[i].sport_id == 16){
-            firstInningScore = parseInt(data.results[i].scores["1"]["away"]) + parseInt(data.results[i].scores["1"]["home"]);
-            for(var j = 1; j < 6; j++){
-              homeScoreFirstHalf = parseInt(data.results[i].scores[j]["away"]) + homeScoreFirstHalf;
-              awayScoreFirstHalf = parseInt(data.results[i].scores[j]["home"]) + awayScoreFirstHalf;
+
+            if(data.results[i].sport_id == 12){
+              homeScoreFirstHalf = parseInt(data.results[i].scores["3"]["away"]);
+              awayScoreFirstHalf = parseInt(data.results[i].scores["3"]["home"]);
+            } else if (data.results[i].sport_id == 16){
+              firstInningScore = parseInt(data.results[i].scores["1"]["away"]) + parseInt(data.results[i].scores["1"]["home"]);
+              for(var j = 1; j < 6; j++){
+                homeScoreFirstHalf = parseInt(data.results[i].scores[j]["away"]) + homeScoreFirstHalf;
+                awayScoreFirstHalf = parseInt(data.results[i].scores[j]["home"]) + awayScoreFirstHalf;
+              }
+            } else if (data.results[i].sport_id == 1){
+              homeScore = data.results[i].ss.split('-')[0];
+              awayScore = data.results[i].ss.split('-')[1];
+              homeScoreFirstHalf = parseInt(data.results[i].scores["1"]["home"]);
+              awayScoreFirstHalf = parseInt(data.results[i].scores["1"]["away"]);
             }
-          } else if (data.results[i].sport_id == 1){
-            homeScore = data.results[i].ss.split('-')[0];
-            awayScore = data.results[i].ss.split('-')[1];
-            homeScoreFirstHalf = parseInt(data.results[i].scores["1"]["home"]);
-            awayScoreFirstHalf = parseInt(data.results[i].scores["1"]["away"]);
           }
+          //Tennis
+          if(data.results[i].sport_id == 13){
+            var scoresArr = data.results[i].scores;
+            var tmpHomeWin = 0;
+            var tmpAwayWin = 0;
+            var tmpTotalNum = 0;
+            for (var key in scoresArr){
+              tmpHomeScore = parseInt(scoresArr[key]["home"]);
+              tmpAwayScore = parseInt(scoresArr[key]["away"]);
+              tmpTotalNum = tmpTotalNum + tmpHomeScore + tmpAwayScore;
+              if(tmpHomeScore > tmpAwayScore){
+                tmpHomeWin = tmpHomeWin + 1;
+              } else {
+                tmpAwayWin = tmpAwayWin + 1;
+              }
+            }
+            homeScore = tmpHomeWin;
+            awayScore = tmpAwayWin;
+            totalTennisNumber = tmpTotalNum;
+          }
+
         } else {
           finalType = 'NotFinished';
         }
@@ -127,7 +152,7 @@ var getBet365Result = function(betId, callback){
           AwayScoreFirstHalf: awayScoreFirstHalf,
           firstInningScore: firstInningScore,
           FinalType: finalType,
-          HomeTeam: homeTeam
+          totalTennisNumber: totalTennisNumber
         });
       }
     } else {
@@ -278,7 +303,6 @@ var getBetResults = function(action, results, callback){
       if(results[j].ID == id){
         console.log('====================Open Bet: ' + action.description + '====================');
 
-        var bet365HomeTeam = results[j].HomeTeam;
         var firstInningScore = parseInt(results[j].firstInningScore);
         var homeScore = parseInt(results[j].HomeScore);
         var awayScore = parseInt(results[j].AwayScore);
@@ -286,26 +310,7 @@ var getBetResults = function(action, results, callback){
         var awayScoreFirstHalf = parseInt(results[j].AwayScoreFirstHalf);
 
         if(results[j].FinalType == 'Finished' && homeScore != null && awayScore!= null){
-          if(curBet.sport != 1){
-            if(betType=='homeTeamML'){
-              console.log('=====Home Team ML=====');
-              console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
-              if(homeScore > awayScore){
-                subBets[i].calcResult = 'win';
-              } else if(homeScore < awayScore){
-                subBets[i].calcResult = 'loss';
-              }
-            }
-            if(betType=='awayTeamML'){
-              console.log('=====awayTeamML=====');
-              console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
-              if(awayScore > homeScore){
-                subBets[i].calcResult = 'win';
-              } else if(awayScore < homeScore){
-                subBets[i].calcResult = 'loss';
-              }
-            }
-          }else {
+          if(curBet.sport == 1){
             if(betType=='homeTeamML'){
               console.log('=====Home Team ML Soccer=====');
               console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
@@ -321,6 +326,25 @@ var getBetResults = function(action, results, callback){
               if(awayScore > homeScore){
                 subBets[i].calcResult = 'win';
               } else if(awayScore <= homeScore){
+                subBets[i].calcResult = 'loss';
+              }
+            }
+          } else {
+            if(betType=='homeTeamML'){
+              console.log('=====Home Team ML=====');
+              console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
+              if(homeScore > awayScore){
+                subBets[i].calcResult = 'win';
+              } else if(homeScore < awayScore){
+                subBets[i].calcResult = 'loss';
+              }
+            }
+            if(betType=='awayTeamML'){
+              console.log('=====awayTeamML=====');
+              console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
+              if(awayScore > homeScore){
+                subBets[i].calcResult = 'win';
+              } else if(awayScore < homeScore){
                 subBets[i].calcResult = 'loss';
               }
             }
@@ -352,20 +376,33 @@ var getBetResults = function(action, results, callback){
             }
           }
           if(betType=='over'){
-            console.log('=====OVER '+ subBets[i].totalNumber +'=====');
-            console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
-            var totalNumber = null;
-            totalNumber = parseFloat(subBets[i].totalNumber);
-            if(totalNumber == undefined || totalNumber == null || (totalNumber>0) == false){
-              totalNumber = parseFloat(subBets[i].over.number);
-            }
-            console.log('Total Number: ' + totalNumber);
-            if(homeScore + awayScore > totalNumber){
-              subBets[i].calcResult = 'win';
-            } else if(homeScore + awayScore < totalNumber){
-              subBets[i].calcResult = 'loss';
-            } else if(homeScore + awayScore == totalNumber){
-              subBets[i].calcResult = 'draw';
+            if(curBet.sport == 13){
+              console.log('=====OVER Tennis '+ subBets[i].totalNumber +'=====');
+              console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
+              var totalNumber = subBets[i].over.number;
+              if(homeScore + awayScore > totalNumber){
+                subBets[i].calcResult = 'win';
+              } else if(homeScore + awayScore < totalNumber){
+                subBets[i].calcResult = 'loss';
+              } else if(homeScore + awayScore == totalNumber){
+                subBets[i].calcResult = 'draw';
+              }
+            } else {
+              console.log('=====OVER '+ subBets[i].totalNumber +'=====');
+              console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
+              var totalNumber = null;
+              totalNumber = parseFloat(subBets[i].totalNumber);
+              if(totalNumber == undefined || totalNumber == null || (totalNumber>0) == false){
+                totalNumber = parseFloat(subBets[i].over.number);
+              }
+              console.log('Total Number: ' + totalNumber);
+              if(homeScore + awayScore > totalNumber){
+                subBets[i].calcResult = 'win';
+              } else if(homeScore + awayScore < totalNumber){
+                subBets[i].calcResult = 'loss';
+              } else if(homeScore + awayScore == totalNumber){
+                subBets[i].calcResult = 'draw';
+              }
             }
           }
           if(betType=='under'){
