@@ -352,7 +352,7 @@ var getBetResults = function(action, results, callback){
           if(betType=='homeTeamRL'){
             console.log('=====Home Team RL=====');
             console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
-            homeScore = homeScore + parseFloat(line);
+            homeScore = homeScore + parseFloat(action.subBets[i].homeTeamRL);
             console.log('New score: ' + homeScore);
             if(homeScore > awayScore){
               subBets[i].calcResult = 'win';
@@ -365,7 +365,7 @@ var getBetResults = function(action, results, callback){
           if(betType=='awayTeamRL'){
             console.log('=====Away Team RL=====');
             console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
-            awayScore = awayScore + parseFloat(line);
+            awayScore = awayScore + parseFloat(action.subBets[i].awayTeamRL);
             console.log('New score: ' + awayScore);
             if(awayScore > homeScore){
               subBets[i].calcResult = 'win';
