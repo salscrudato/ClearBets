@@ -101,9 +101,6 @@ var getBet365Result = function(betId, callback){
 
           //Football, Baseball, Soccer
           if(data.results[i].sport_id == 12 || data.results[i].sport_id == 16 || data.results[i].sport_id == 1){
-            var homeScore = data.results[i].ss.split('-')[1];
-            var awayScore = data.results[i].ss.split('-')[0];
-
             if(data.results[i].sport_id == 12){
               homeScoreFirstHalf = parseInt(data.results[i].scores["3"]["away"]);
               awayScoreFirstHalf = parseInt(data.results[i].scores["3"]["home"]);
@@ -114,8 +111,8 @@ var getBet365Result = function(betId, callback){
                 awayScoreFirstHalf = parseInt(data.results[i].scores[j]["home"]) + awayScoreFirstHalf;
               }
             } else if (data.results[i].sport_id == 1){
-              homeScore = data.results[i].ss.split('-')[0];
-              awayScore = data.results[i].ss.split('-')[1];
+              homeScore = data.results[i].ss.split('-')[1];
+              awayScore = data.results[i].ss.split('-')[0];
               homeScoreFirstHalf = parseInt(data.results[i].scores["1"]["home"]);
               awayScoreFirstHalf = parseInt(data.results[i].scores["1"]["away"]);
             }
