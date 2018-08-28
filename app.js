@@ -129,8 +129,8 @@ var getBet365Result = function(betId, callback){
             var tmpAwayWin = 0;
             var tmpTotalNum = 0;
             for (var key in scoresArr){
-              tmpHomeScore = parseInt(scoresArr[key]["home"]);
-              tmpAwayScore = parseInt(scoresArr[key]["away"]);
+              tmpHomeScore = parseInt(scoresArr[key]["away"]);
+              tmpAwayScore = parseInt(scoresArr[key]["home"]);
               tmpTotalNum = tmpTotalNum + tmpHomeScore + tmpAwayScore;
               if(tmpHomeScore > tmpAwayScore){
                 tmpHomeWin = tmpHomeWin + 1;
