@@ -303,14 +303,13 @@ var getBetResults = function(action, results, callback){
     const line = curBet.line;
     for(var j = 0; j < results.length; j++){
       if(results[j].ID == id){
-        console.log('====================Open Bet: ' + action.description + '====================');
+        console.log('==========Open Bet: ' + action.description + '==========');
 
         var firstInningScore = parseInt(results[j].firstInningScore);
         var homeScore = parseInt(results[j].HomeScore);
         var awayScore = parseInt(results[j].AwayScore);
         var homeScoreFirstHalf = parseInt(results[j].HomeScoreFirstHalf);
         var awayScoreFirstHalf = parseInt(results[j].AwayScoreFirstHalf);
-        console.log(homeScore);
 
         if(results[j].FinalType == 'Finished' && homeScore != null && awayScore!= null){
           if(curBet.sport == 1){
@@ -324,6 +323,11 @@ var getBetResults = function(action, results, callback){
               }
             }
             if(betType=='awayTeamML'){
+              if(action.betType=='LIVE'){
+                tmpHome = homeScore;
+                homeScore = awayScore;
+                awayScore = tmpHome;
+              }
               console.log('=====awayTeamML Soccer=====');
               console.log(action.subBets[i].homeTeam + ': ' + homeScore + ' ' + action.subBets[i].awayTeam + ': ' + awayScore);
               if(awayScore > homeScore){
