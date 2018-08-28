@@ -104,8 +104,12 @@ var getBet365Result = function(betId, callback){
             if(data.results[i].sport_id == 12){
               homeScoreFirstHalf = parseInt(data.results[i].scores["3"]["away"]);
               awayScoreFirstHalf = parseInt(data.results[i].scores["3"]["home"]);
+              // homeScore = data.results[i].ss.split('-')[1];
+              // awayScore = data.results[i].ss.split('-')[0];
             } else if (data.results[i].sport_id == 16){
               firstInningScore = parseInt(data.results[i].scores["1"]["away"]) + parseInt(data.results[i].scores["1"]["home"]);
+              homeScore = data.results[i].ss.split('-')[1];
+              awayScore = data.results[i].ss.split('-')[0];
               for(var j = 1; j < 6; j++){
                 homeScoreFirstHalf = parseInt(data.results[i].scores[j]["away"]) + homeScoreFirstHalf;
                 awayScoreFirstHalf = parseInt(data.results[i].scores[j]["home"]) + awayScoreFirstHalf;
@@ -117,6 +121,7 @@ var getBet365Result = function(betId, callback){
               awayScoreFirstHalf = parseInt(data.results[i].scores["1"]["away"]);
             }
           }
+
           //Tennis
           if(data.results[i].sport_id == 13){
             var scoresArr = data.results[i].scores;
@@ -305,6 +310,7 @@ var getBetResults = function(action, results, callback){
         var awayScore = parseInt(results[j].AwayScore);
         var homeScoreFirstHalf = parseInt(results[j].HomeScoreFirstHalf);
         var awayScoreFirstHalf = parseInt(results[j].AwayScoreFirstHalf);
+        console.log(homeScore);
 
         if(results[j].FinalType == 'Finished' && homeScore != null && awayScore!= null){
           if(curBet.sport == 1){
