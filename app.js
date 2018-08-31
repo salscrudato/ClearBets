@@ -72,126 +72,126 @@ var getAllJsonResults = function(callback){
   });
 }
 
-var getBet365Result = function(betId, callback){
-  var tmpId = betId;
-  baseUrl = 'https://api.betsapi.com/v1/bet365/result?token=11194-fFJWf4UUW1tZhK&event_id=';
-  tempUrl = baseUrl + betId;
-  var options = {
-    url: tempUrl,
-    method: 'GET'
-  }
-  request(options, function (error, response, body) {
-    if (!error && response.statusCode == 200) {
-
-      var finalType = null;
-      var homeScore = null;
-      var awayScore = null;
-      var ID = null;
-      var homeScoreFirstHalf = null;
-      var awayScoreFirstHalf = null;
-      var firstInningScore = null;
-      var homeTeam = null;
-      var totalTennisNumber = null;
-      data = JSON.parse(body);
-
-      for(var i = 0; i < data.results.length; i++){
-        finalType = data.results[i].time_status;
-        if(finalType == 3){
-          finalType = 'Finished';
-
-          //Football, Baseball, Soccer
-          if(data.results[i].sport_id == 12 || data.results[i].sport_id == 16 || data.results[i].sport_id == 1){
-            if(data.results[i].sport_id == 12){
-              homeScoreFirstHalf = parseInt(data.results[i].scores["3"]["away"]);
-              awayScoreFirstHalf = parseInt(data.results[i].scores["3"]["home"]);
-              // homeScore = data.results[i].ss.split('-')[1];
-              // awayScore = data.results[i].ss.split('-')[0];
-            } else if (data.results[i].sport_id == 16){
-              firstInningScore = parseInt(data.results[i].scores["1"]["away"]) + parseInt(data.results[i].scores["1"]["home"]);
-              homeScore = data.results[i].ss.split('-')[1];
-              awayScore = data.results[i].ss.split('-')[0];
-              for(var j = 1; j < 6; j++){
-                homeScoreFirstHalf = parseInt(data.results[i].scores[j]["away"]) + homeScoreFirstHalf;
-                awayScoreFirstHalf = parseInt(data.results[i].scores[j]["home"]) + awayScoreFirstHalf;
-              }
-            } else if (data.results[i].sport_id == 1){
-              homeScore = data.results[i].ss.split('-')[1];
-              awayScore = data.results[i].ss.split('-')[0];
-              homeScoreFirstHalf = parseInt(data.results[i].scores["1"]["home"]);
-              awayScoreFirstHalf = parseInt(data.results[i].scores["1"]["away"]);
-            }
-          }
-
-          //Tennis
-          if(data.results[i].sport_id == 13){
-            var scoresArr = data.results[i].scores;
-            var tmpHomeWin = 0;
-            var tmpAwayWin = 0;
-            var tmpTotalNum = 0;
-            for (var key in scoresArr){
-              tmpHomeScore = parseInt(scoresArr[key]["away"]);
-              tmpAwayScore = parseInt(scoresArr[key]["home"]);
-              tmpTotalNum = tmpTotalNum + tmpHomeScore + tmpAwayScore;
-              if(tmpHomeScore > tmpAwayScore){
-                tmpHomeWin = tmpHomeWin + 1;
-              } else {
-                tmpAwayWin = tmpAwayWin + 1;
-              }
-            }
-            homeScore = tmpHomeWin;
-            awayScore = tmpAwayWin;
-            totalTennisNumber = tmpTotalNum;
-          }
-
-        } else {
-          finalType = 'NotFinished';
-        }
-        callback({
-          ID: tmpId,
-          HomeScore: homeScore,
-          AwayScore: awayScore,
-          HomeScoreFirstHalf: homeScoreFirstHalf,
-          AwayScoreFirstHalf: awayScoreFirstHalf,
-          firstInningScore: firstInningScore,
-          FinalType: finalType,
-          totalTennisNumber: totalTennisNumber
-        });
-      }
-    } else {
-      callback({success: false});
-    }
-  });
-}
+// var getBet365Result = function(betId, callback){
+//   var tmpId = betId;
+//   baseUrl = 'https://api.betsapi.com/v1/bet365/result?token=11194-fFJWf4UUW1tZhK&event_id=';
+//   tempUrl = baseUrl + betId;
+//   var options = {
+//     url: tempUrl,
+//     method: 'GET'
+//   }
+//   request(options, function (error, response, body) {
+//     if (!error && response.statusCode == 200) {
+//
+//       var finalType = null;
+//       var homeScore = null;
+//       var awayScore = null;
+//       var ID = null;
+//       var homeScoreFirstHalf = null;
+//       var awayScoreFirstHalf = null;
+//       var firstInningScore = null;
+//       var homeTeam = null;
+//       var totalTennisNumber = null;
+//       data = JSON.parse(body);
+//
+//       for(var i = 0; i < data.results.length; i++){
+//         finalType = data.results[i].time_status;
+//         if(finalType == 3){
+//           finalType = 'Finished';
+//
+//           //Football, Baseball, Soccer
+//           if(data.results[i].sport_id == 12 || data.results[i].sport_id == 16 || data.results[i].sport_id == 1){
+//             if(data.results[i].sport_id == 12){
+//               homeScoreFirstHalf = parseInt(data.results[i].scores["3"]["away"]);
+//               awayScoreFirstHalf = parseInt(data.results[i].scores["3"]["home"]);
+//               // homeScore = data.results[i].ss.split('-')[1];
+//               // awayScore = data.results[i].ss.split('-')[0];
+//             } else if (data.results[i].sport_id == 16){
+//               firstInningScore = parseInt(data.results[i].scores["1"]["away"]) + parseInt(data.results[i].scores["1"]["home"]);
+//               homeScore = data.results[i].ss.split('-')[1];
+//               awayScore = data.results[i].ss.split('-')[0];
+//               for(var j = 1; j < 6; j++){
+//                 homeScoreFirstHalf = parseInt(data.results[i].scores[j]["away"]) + homeScoreFirstHalf;
+//                 awayScoreFirstHalf = parseInt(data.results[i].scores[j]["home"]) + awayScoreFirstHalf;
+//               }
+//             } else if (data.results[i].sport_id == 1){
+//               homeScore = data.results[i].ss.split('-')[1];
+//               awayScore = data.results[i].ss.split('-')[0];
+//               homeScoreFirstHalf = parseInt(data.results[i].scores["1"]["home"]);
+//               awayScoreFirstHalf = parseInt(data.results[i].scores["1"]["away"]);
+//             }
+//           }
+//
+//           //Tennis
+//           if(data.results[i].sport_id == 13){
+//             var scoresArr = data.results[i].scores;
+//             var tmpHomeWin = 0;
+//             var tmpAwayWin = 0;
+//             var tmpTotalNum = 0;
+//             for (var key in scoresArr){
+//               tmpHomeScore = parseInt(scoresArr[key]["away"]);
+//               tmpAwayScore = parseInt(scoresArr[key]["home"]);
+//               tmpTotalNum = tmpTotalNum + tmpHomeScore + tmpAwayScore;
+//               if(tmpHomeScore > tmpAwayScore){
+//                 tmpHomeWin = tmpHomeWin + 1;
+//               } else {
+//                 tmpAwayWin = tmpAwayWin + 1;
+//               }
+//             }
+//             homeScore = tmpHomeWin;
+//             awayScore = tmpAwayWin;
+//             totalTennisNumber = tmpTotalNum;
+//           }
+//
+//         } else {
+//           finalType = 'NotFinished';
+//         }
+//         callback({
+//           ID: tmpId,
+//           HomeScore: homeScore,
+//           AwayScore: awayScore,
+//           HomeScoreFirstHalf: homeScoreFirstHalf,
+//           AwayScoreFirstHalf: awayScoreFirstHalf,
+//           firstInningScore: firstInningScore,
+//           FinalType: finalType,
+//           totalTennisNumber: totalTennisNumber
+//         });
+//       }
+//     } else {
+//       callback({success: false});
+//     }
+//   });
+// }
 
 //Gets all Bet365 Results
-var getAllBet365Results = function(bets, callback){
-  var finalResults = [];
-  var requests = 0;
-  const betsLength = bets.length;
+// var getAllBet365Results = function(bets, callback){
+//   var finalResults = [];
+//   var requests = 0;
+//   const betsLength = bets.length;
+//
+//   for(var i = 0; i < betsLength; i++){
+//     getBet365Result(bets[i], function(result){
+//       finalResults.push(result);
+//       requests = requests + 1;
+//       if(requests==betsLength){
+//         callback(finalResults);
+//       }
+//     });
+//   }
+// }
 
-  for(var i = 0; i < betsLength; i++){
-    getBet365Result(bets[i], function(result){
-      finalResults.push(result);
-      requests = requests + 1;
-      if(requests==betsLength){
-        callback(finalResults);
-      }
-    });
-  }
-}
-
-var createBet365String = function(bets){
-  var curTime = (new Date).getTime();
-  var betIdArr = [];
-  for (var i = 0; i < bets.length; i++){
-    for(var j = 0; j < bets[i].subBets.length; j++){
-      if(betIdArr.indexOf(bets[i].subBets[j].id) < 0 && curTime > bets[i].subBets[j].epoch){
-        betIdArr.push(bets[i].subBets[j].id);
-      }
-    }
-  }
-  return betIdArr;
-}
+// var createBet365String = function(bets){
+//   var curTime = (new Date).getTime();
+//   var betIdArr = [];
+//   for (var i = 0; i < bets.length; i++){
+//     for(var j = 0; j < bets[i].subBets.length; j++){
+//       if(betIdArr.indexOf(bets[i].subBets[j].id) < 0 && curTime > bets[i].subBets[j].epoch){
+//         betIdArr.push(bets[i].subBets[j].id);
+//       }
+//     }
+//   }
+//   return betIdArr;
+// }
 
 //Checks if all bets within a bet are satisfied
 var allBetsSatisfied = function(action){
@@ -601,15 +601,15 @@ var getBetResults = function(action, results, callback){
   }
 }
 
-var bet365 = function(){
-  getAllOpenBets('bet365', function(bet365Odds){
-    getAllBet365Results(createBet365String(bet365Odds), function(results){
-      for(var i = 0; i < bet365Odds.length; i++){
-        getBetResults(bet365Odds[i], results);
-      }
-    });
-  });
-}
+// var bet365 = function(){
+//   getAllOpenBets('bet365', function(bet365Odds){
+//     getAllBet365Results(createBet365String(bet365Odds), function(results){
+//       for(var i = 0; i < bet365Odds.length; i++){
+//         getBetResults(bet365Odds[i], results);
+//       }
+//     });
+//   });
+// }
 
 app.listen(port, function(){
   getAllUserBalances(function(success){
@@ -620,8 +620,8 @@ app.listen(port, function(){
             for(var i = 0; i < jsonOdds.length; i++){
               getBetResults(jsonOdds[i], results, 'json');
             }
-            console.log('==========Bet365==========');
-            bet365();
+            // console.log('==========Bet365==========');
+            // bet365();
           });
         }
       });
